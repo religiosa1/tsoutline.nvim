@@ -1,6 +1,10 @@
 --- Tree-sitter query to capture functions, classes, and methods for
---- typescript and typescript react
-return [[
+--- typescript/javascript and their react variants
+---@param opts { is_js: boolean? } use javascript grammar (identifier for class names instead of type_identifier)
+---@return string
+return function(opts)
+  local class_name_node = (opts and opts.is_js) and "(identifier)" or "(type_identifier)"
+  return [[
 ;;*** functions and fe assigned to a variable *** ;;
 
 (function_declaration
@@ -70,7 +74,7 @@ return [[
 ;;*** classes *** ;;
 
 (class_declaration
-  name: (type_identifier) @class.name
+  name: ]] .. class_name_node .. [[ @class.name
 ) @class.definition
 
 (method_definition
@@ -116,3 +120,4 @@ return [[
   )
 )
 ]]
+end
