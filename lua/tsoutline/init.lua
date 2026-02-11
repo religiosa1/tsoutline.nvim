@@ -1,20 +1,21 @@
 ---@module "plenary"
 
--- local configModule = require("tsoutline/config")
+local configModule = require("tsoutline/config")
 local outline = require("tsoutline/outline")
 
 local M = {}
 
 ---@param opts? TsOutlineConfig | {}
 function M.tsoutline(opts)
-  -- config =
-  --     vim.tbl_deep_extend("force", configModule.default(), M.config, config or {})
+  opts = vim.tbl_deep_extend("force", configModule.default(), opts or {})
 
   local ft = vim.bo.filetype
-  if ft == "typescript" or ft == "typescriptreact" then
+
+  local language_query = opts.languages[ft]
+  if language_query then
     return Snacks.picker({
-      title = "Outline (treesitter)",
-      items = outline(),
+      title = opts.ts_picker_title,
+      items = outline(ft, language_query),
       format = "lsp_symbol",
       tree = true,
       auto_confirm = false,
@@ -23,8 +24,8 @@ function M.tsoutline(opts)
     })
   else
     Snacks.picker.lsp_symbols({
-      title = "Outline (LSP)",
-      filter = { default = { "Class", "Function", "Method", "Constructor", "Enum" } },
+      title = opts.fallback_picker_title,
+      filter = { default = opts.default_lsp_symbols },
     })
   end
 end

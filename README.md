@@ -27,6 +27,28 @@ kind of lsp_symbols, the solution for me is just to get the parts we're
 really interested in with a tree-sitter query, falling back to filtered LSP
 symbols for languages without the Tree-Sitter query.
 
+## Installation (Lazy)
+
+```lua
+{
+  "religiosa1/tsoutline.nvim",
+  opts = { },
+  keys = {
+    {
+      "<Leader>sf",
+      "<cmd>TsOutline<cr>",
+      desc = "T-S outline",
+      mode = { "n" },
+    },
+  },
+}
+```
+
+## Configuration
+
+For the list of configuration options and their default values, see
+[config.lua](./lua/tsoutline/config.lua)
+
 ## License
 
 tsoutline.nvim is MIT licensed.

@@ -1,122 +1,3 @@
---- Tree-sitter query to capture functions, classes, and methods
-local query_string = [[
-;;*** functions and fe assigned to a variable *** ;;
-
-(function_declaration
-  name: (identifier) @function.name
-) @function.definition
-
-(lexical_declaration
-  kind: "const"
-  (variable_declarator
-    name: (identifier) @arrow.name
-    value: [(arrow_function) (function_expression)])
-) @arrow.definition
-
-
-((lexical_declaration
-  kind: _ @kind
-  (variable_declarator
-    name: (identifier) @var_arrow.name
-    value: [(arrow_function) (function_expression)]))
-  (#not-eq? @kind "const")
-) @var_arrow.definition
-
-(variable_declaration
-  (variable_declarator
-    name: (identifier) @var_arrow.name
-    value: [(arrow_function) (function_expression)])
-) @var_arrow.definition
-
-;; *** root-level callbacks *** ;;
-
-; Callbacks in direct function calls at root level
-(program
-  (expression_statement
-    (call_expression
-      function: (identifier) @callback.name
-      arguments: (arguments
-        (arrow_function) @callback.definition) @callback.args)))
-
-;; Callbacks in an object with intermediate function calls - capture only the property as name
-(program
-  (expression_statement
-    (call_expression
-      function: (member_expression
-        object: (call_expression)
-        property: (property_identifier) @callback.name)
-      arguments: (arguments
-        (arrow_function) @callback.definition
-      ) @callback.args
-    )
-  )
-)
-
-;; Callbacks in an object with optional prop access only - capture the entire member_expression
-(program
-  (expression_statement
-    (call_expression
-      function: (member_expression
-        object: [(identifier) (member_expression)]
-        property: (property_identifier)) @callback.name
-      arguments: (arguments
-        (arrow_function) @callback.definition
-      ) @callback.args
-    )
-  )
-)
-
-;;*** classes *** ;;
-
-(class_declaration
-  name: (type_identifier) @class.name
-) @class.definition
-
-(method_definition
-  "get"
-  name: (property_identifier) @getter.name
-) @getter.definition
-
-(method_definition
-  "set"
-  name: (property_identifier) @setter.name
-) @setter.definition
-
-(method_definition
-  name: (property_identifier) @constructor.name
-  (#eq? @constructor.name "constructor")
-) @constructor.definition
-
-; general class methods
-(method_definition
-  name: [(property_identifier) (private_property_identifier)] @method.name
-  (#not-eq? @method.name "constructor")
-) @method.definition
-
-;;*** constants *** ;;
-
-; non-exported root-level constants
-(program
-  (lexical_declaration
-    kind: "const"
-    (variable_declarator
-      name: (identifier) @const.name)
-  ) @const.definition
-)
-
-; exported root-level constants
-(program
-  (export_statement
-    declaration: (lexical_declaration
-      kind: "const"
-      (variable_declarator
-        name: (identifier) @const.name)
-    ) @const.definition
-  )
-)
-]]
-
----Set of outline nodes in a file, deduplicated by their position
 ---@class OutlineNodesSet
 ---@field private lines table<number, table<number, { priority: number, node: OutlineNode }>> table of lines, containing map of columns to priority
 local OutlineNodesSet = {}
@@ -308,10 +189,11 @@ local function get_symbol_type(captured_nodes)
 end
 
 ---get all "interesting" for outline nodes
+---@param query_string string TreeSitter query for the language
 ---@param parser vim.treesitter.LanguageTree
 ---@param buffer_id number
 ---@return OutlineNode[]
-local function get_outline_nodes(parser, buffer_id)
+local function get_outline_nodes(query_string, parser, buffer_id)
   local tree = parser:parse()[1]
   local root = tree:root()
   local query = vim.treesitter.query.parse("typescript", query_string)
@@ -411,13 +293,15 @@ end
 
 ---Get snacks items for outline nodes for a typescript buffer with a treesitter
 ---query
+---@param treesitter_language string
+---@param query_string string TreeSitter query for the language to parse
 ---@return snacks.picker.finder.Item[]
-return function()
+return function(treesitter_language, query_string)
   local buffer_id = vim.api.nvim_get_current_buf()
-  local parser = vim.treesitter.get_parser(buffer_id, "typescript")
+  local parser = vim.treesitter.get_parser(buffer_id, treesitter_language)
   assert(parser)
 
-  local outline_nodes = get_outline_nodes(parser, buffer_id)
+  local outline_nodes = get_outline_nodes(query_string, parser, buffer_id)
   local file_path = vim.api.nvim_buf_get_name(buffer_id)
   local tree = build_tree(outline_nodes, file_path)
   return tree
