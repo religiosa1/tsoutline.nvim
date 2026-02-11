@@ -48,6 +48,31 @@ symbols for languages without the Tree-Sitter query.
 }
 ```
 
+## What it shows
+
+### Tree-Sitter mode (TypeScript/JavaScript)
+
+For languages with a Tree-Sitter query, the picker displays:
+
+- Function declarations
+- Arrow functions and function expressions assigned to `const` or `let/var` (shown as `foo()`)
+- Root-level callbacks with string literal passed to caller (shown as `describe("arg") callback`)
+- Classes
+- Constructors, methods (shown as `name()`)
+- Getters and setters (shown as `(get) name` / `(set) name`)
+- Root-level constants
+
+Items are displayed as a hierarchical tree, so class methods appear nested
+under their class, etc. with the appropriate icon.
+
+### LSP fallback (other languages)
+
+For languages without a Tree-Sitter query, the plugin falls back to the
+built-in LSP document symbols picker, filtered to show only: Class, Function,
+Method, Constructor, and Enum symbols by default. This filter list is
+configurable per language via `lsp_symbol_types` or globally via
+`default_lsp_symbols`.
+
 ## Languages and limitations
 
 Currently only supports ts and js, but extra languages can be added with an
