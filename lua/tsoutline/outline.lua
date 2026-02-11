@@ -241,7 +241,11 @@ end
 ---@param child OutlineNode
 ---@return boolean
 local function contains(parent, child)
-  return parent.pos[1] <= child.pos[1] and parent.end_pos[1] >= child.end_pos[1]
+  local starts_after = child.pos[1] > parent.pos[1]
+    or (child.pos[1] == parent.pos[1] and child.pos[2] >= parent.pos[2])
+  local ends_before = child.end_pos[1] < parent.end_pos[1]
+    or (child.end_pos[1] == parent.end_pos[1] and child.end_pos[2] <= parent.end_pos[2])
+  return starts_after and ends_before
 end
 
 ---Build a hierarchical tree of items, based on the found outline nodes.
