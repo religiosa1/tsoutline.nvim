@@ -1,3 +1,5 @@
+---@module 'snacks.picker'
+
 ---@class OutlineNodesSet
 ---@field private lines table<number, table<number, { priority: number, node: OutlineNode }>> table of lines, containing map of columns to priority
 local OutlineNodesSet = {}
@@ -116,15 +118,16 @@ local function get_node_priority(symbol_type)
   end
 end
 
----Get the icon kind (for the icon) from the node
+---Get the node name, that will be displayed in the picker
 ---@param symbol_type SymbolType
 ---@param captured_nodes table<string, TSNode[]>
 ---@param buffer_id integer
 ---@return string name to be displayed in the snacks picker
 local function get_node_name(symbol_type, captured_nodes, buffer_id)
   local name_nodes = captured_nodes[symbol_type .. ".name"]
-  assert(name_nodes)
-  assert(name_nodes[1])
+  assert(name_nodes, "Name nodes treesitter capture returned nil")
+  assert(name_nodes[1], "No name nodes returned in the capture")
+
   local name = vim.treesitter.get_node_text(name_nodes[1], buffer_id)
 
   if symbol_type == SymbolType.Getter then
@@ -189,14 +192,15 @@ local function get_symbol_type(captured_nodes)
 end
 
 ---get all "interesting" for outline nodes
+---@param treesitter_language string TreeSitter language
 ---@param query_string string TreeSitter query for the language
 ---@param parser vim.treesitter.LanguageTree
 ---@param buffer_id number
 ---@return OutlineNode[]
-local function get_outline_nodes(query_string, parser, buffer_id)
+local function get_outline_nodes(treesitter_language, query_string, parser, buffer_id)
   local tree = parser:parse()[1]
   local root = tree:root()
-  local query = vim.treesitter.query.parse("typescript", query_string)
+  local query = vim.treesitter.query.parse(treesitter_language, query_string)
 
   local outline_nodes = OutlineNodesSet.new()
 
@@ -211,7 +215,7 @@ local function get_outline_nodes(query_string, parser, buffer_id)
     local name_nodes = captured_nodes[symbol_type .. ".name"]
     local def_nodes = captured_nodes[symbol_type .. ".definition"]
 
-    if not #name_nodes or not #def_nodes then
+    if not name_nodes or #name_nodes == 0 or not def_nodes or #def_nodes == 0 then
       goto next_match
     end
 
@@ -241,7 +245,7 @@ local function contains(parent, child)
 end
 
 ---Build a hierarchical tree of items, based on the found outline nodes.
----@param outline_nodes OutlineNode
+---@param outline_nodes OutlineNode[]
 ---@param file_path string
 ---@return snacks.picker.finder.Item[]
 local function build_tree(outline_nodes, file_path)
@@ -299,9 +303,9 @@ end
 return function(treesitter_language, query_string)
   local buffer_id = vim.api.nvim_get_current_buf()
   local parser = vim.treesitter.get_parser(buffer_id, treesitter_language)
-  assert(parser)
+  assert(parser, "Unable to retrieve parser for buffer")
 
-  local outline_nodes = get_outline_nodes(query_string, parser, buffer_id)
+  local outline_nodes = get_outline_nodes(treesitter_language, query_string, parser, buffer_id)
   local file_path = vim.api.nvim_buf_get_name(buffer_id)
   local tree = build_tree(outline_nodes, file_path)
   return tree

@@ -1,5 +1,3 @@
----@module "plenary"
-
 local configModule = require("tsoutline/config")
 local outline = require("tsoutline/outline")
 
