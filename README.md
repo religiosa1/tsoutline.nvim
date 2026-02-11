@@ -3,6 +3,8 @@
 Code outline [snacks](https://github.com/folke/snacks.nvim) picker for
 typescript/javascript for neovim.
 
+<img width="1890" height="1017" alt="image" src="https://github.com/user-attachments/assets/a4ff5d30-bc33-4aa3-ab4c-36a77a10a26d" />
+
 ## The problem
 
 Built-in lsp_symbols picker is a bless to quickly navigate around the code in
