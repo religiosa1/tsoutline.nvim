@@ -9,11 +9,12 @@ function M.tsoutline(opts)
 
   local ft = vim.bo.filetype
 
-  local language_query = opts.languages[ft]
-  if language_query then
+  local language = opts.languages[ft]
+  local treesitter_language_name = (language and language.language) or vim.treesitter.language.get_lang(ft)
+  if language and treesitter_language_name then
     return Snacks.picker({
       title = opts.ts_picker_title,
-      items = outline(ft, language_query),
+      items = outline(treesitter_language_name, language.query),
       format = "lsp_symbol",
       tree = true,
       auto_confirm = false,
