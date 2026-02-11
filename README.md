@@ -32,6 +32,8 @@ symbols for languages without the Tree-Sitter query.
 ```lua
 {
   "religiosa1/tsoutline.nvim",
+  -- most likely you don't need this, as I assume snacks is already configured
+  dependencies = { "folke/snacks.nvim" },
   opts = { },
   keys = {
     {
@@ -43,6 +45,15 @@ symbols for languages without the Tree-Sitter query.
   },
 }
 ```
+
+## Languages and limitations
+
+Currently only supports ts and js, but extra languages can be added with an
+appropriate TS query in the config.
+
+For ts/js it only supports ESM export syntax, not CommonJS export.
+
+Enums are not yet supported in typescript
 
 ## Configuration
 
