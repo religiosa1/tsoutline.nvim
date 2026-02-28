@@ -18,27 +18,27 @@ local M = {}
 --- Returns the default opts config object
 ---@return TsOutlineConfig
 function M.default()
-  ---@type TsOutlineConfig
-  return {
-    fallback_picker_title = "Outline (LSP)",
-    ts_picker_title = "Outline (treesitter)",
-    languages = {
-      typescript = {
-        query = typescript_query,
-      },
-      typescriptreact = {
-        query = typescript_query,
-      },
-      javascript = {
-        query = javascript_query,
-      },
-      javascriptreact = {
-        query = javascript_query,
-      },
-    },
-    lsp_symbol_types = {},
-    default_lsp_symbols = { "Class", "Function", "Method", "Constructor", "Enum" },
-  }
+	---@type TsOutlineConfig
+	return {
+		fallback_picker_title = "Outline (LSP)",
+		ts_picker_title = "Outline (treesitter)",
+		languages = {
+			typescript = {
+				query = typescript_query,
+			},
+			typescriptreact = {
+				query = typescript_query,
+			},
+			javascript = {
+				query = javascript_query,
+			},
+			javascriptreact = {
+				query = javascript_query,
+			},
+		},
+		lsp_symbol_types = {},
+		default_lsp_symbols = { "Class", "Function", "Method", "Constructor", "Enum", "Struct" },
+	}
 end
 
 return M
