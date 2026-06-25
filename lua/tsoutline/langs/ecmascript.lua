@@ -8,15 +8,16 @@ return function(opts)
 	local query = [[
 ;;*** functions and fe assigned to a variable *** ;;
 
-(function_declaration
-  name: (identifier) @function.name
-) @function.definition
+[
+  (function_declaration name: (identifier) @function.name)
+  (generator_function_declaration name: (identifier) @function.name)
+] @function.definition
 
 (lexical_declaration
   kind: "const"
   (variable_declarator
     name: (identifier) @arrow.name
-    value: [(arrow_function) (function_expression)])
+    value: [(arrow_function) (function_expression) (generator_function)])
 ) @arrow.definition
 
 
@@ -24,14 +25,14 @@ return function(opts)
   kind: _ @kind
   (variable_declarator
     name: (identifier) @var_arrow.name
-    value: [(arrow_function) (function_expression)]))
+    value: [(arrow_function) (function_expression) (generator_function)]))
   (#not-eq? @kind "const")
 ) @var_arrow.definition
 
 (variable_declaration
   (variable_declarator
     name: (identifier) @var_arrow.name
-    value: [(arrow_function) (function_expression)])
+    value: [(arrow_function) (function_expression) (generator_function)])
 ) @var_arrow.definition
 
 ;; *** root-level callbacks *** ;;
@@ -127,8 +128,10 @@ return function(opts)
 ;; rides along and the higher conflict priority makes these win the dedup.
 
 (export_statement
-  declaration: (function_declaration
-    name: (identifier) @function.name)
+  declaration: [
+    (function_declaration name: (identifier) @function.name)
+    (generator_function_declaration name: (identifier) @function.name)
+  ]
 ) @function.definition @exported
 
 (export_statement
@@ -136,7 +139,7 @@ return function(opts)
     kind: "const"
     (variable_declarator
       name: (identifier) @arrow.name
-      value: [(arrow_function) (function_expression)]))
+      value: [(arrow_function) (function_expression) (generator_function)]))
 ) @arrow.definition @exported
 
 (export_statement
@@ -144,7 +147,7 @@ return function(opts)
     kind: _ @kind
     (variable_declarator
       name: (identifier) @var_arrow.name
-      value: [(arrow_function) (function_expression)]))
+      value: [(arrow_function) (function_expression) (generator_function)]))
     (#not-eq? @kind "const"))
 ) @var_arrow.definition @exported
 
@@ -152,16 +155,32 @@ return function(opts)
   declaration: (variable_declaration
     (variable_declarator
       name: (identifier) @var_arrow.name
-      value: [(arrow_function) (function_expression)]))
+      value: [(arrow_function) (function_expression) (generator_function)]))
 ) @var_arrow.definition @exported
 
 (export_statement
   declaration: (class_declaration
     name: ]] .. class_name_node .. [[ @class.name)
 ) @class.definition @exported
+
+;;*** anonymous default exports ***;;
+;; Named defaults (`export default function foo`) use the `declaration:` field and
+;; are already covered by the patterns above. These match only the anonymous
+;; `value:` forms, which have no name node, so the `default` keyword token is
+;; captured as the name (its text is literally "default").
+(export_statement
+  "default" @function.name
+  value: [(function_expression) (arrow_function) (generator_function)]
+) @function.definition @exported
+
+(export_statement
+  "default" @class.name
+  value: (class)
+) @class.definition @exported
 ]]
 	if not is_js then
-		query = query .. [[
+		query = query
+			.. [[
 ;;*** enums *** ;;
 
 (enum_declaration name: (identifier) @enum.name) @enum.definition
