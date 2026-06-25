@@ -66,6 +66,7 @@ local SymbolType = {
 	Const = "const",
 	---Root-level callbacks
 	Callback = "callback",
+	Enum = "enum",
 }
 
 --- Intermediate OutlineNode meta info
@@ -80,7 +81,7 @@ local SymbolType = {
 --- http://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config
 ---@param symbol_type SymbolType
 ---@return string?
-local function get_node_kind(symbol_type)
+local function get_node_kind_icon(symbol_type)
 	if symbol_type == SymbolType.Function then
 		return "Function"
 	elseif symbol_type == SymbolType.Arrow then
@@ -99,6 +100,8 @@ local function get_node_kind(symbol_type)
 		return "Constant"
 	elseif symbol_type == SymbolType.Callback then
 		return "Function"
+	elseif symbol_type == SymbolType.Enum then
+		return "Enum"
 	end
 end
 
@@ -224,7 +227,7 @@ local function get_outline_nodes(treesitter_language, query_string, parser, buff
 
 		local node = {
 			name = get_node_name(symbol_type, captured_nodes, buffer_id),
-			kind = get_node_kind(symbol_type),
+			kind = get_node_kind_icon(symbol_type),
 			pos = pos,
 			end_pos = end_pos,
 		}

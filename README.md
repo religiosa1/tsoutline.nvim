@@ -80,12 +80,25 @@ appropriate TS query in the config.
 
 For ts/js it only supports ESM export syntax, not CommonJS export.
 
-Enums are not yet supported in typescript
-
 ## Configuration
 
 For the list of configuration options and their default values, see
 [config.lua](./lua/tsoutline/config.lua)
+
+## Local development
+
+If you want to extend or change TreeSitter definitions, first you need to figure
+out the correct query. You can use `:InspectTree` for that.
+
+Your query must capture `<type>.name` and `<type>.definition`, containing the
+name and full definition of a thing you're trying to capture, where `<type>`
+is one of `SymbolType` enum values (e.g. `function`, `class`, etc).
+
+Once you have your query written you can verify it, by using `:EditQuery` in
+a source file and pasting your query there -- it should find the thing you're
+trying to get in tree-sitter.
+
+See [ecmascript.lua](./lua/tsoutline/langs/ecmascript.lua) for an example.
 
 ## License
 

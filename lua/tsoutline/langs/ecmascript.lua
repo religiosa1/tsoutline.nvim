@@ -3,8 +3,9 @@
 ---@param opts { is_js: boolean? } use javascript grammar (identifier for class names instead of type_identifier)
 ---@return string
 return function(opts)
-  local class_name_node = (opts and opts.is_js) and "(identifier)" or "(type_identifier)"
-  return [[
+	local is_js = (opts and opts.is_js)
+	local class_name_node = is_js and "(identifier)" or "(type_identifier)"
+	local query = [[
 ;;*** functions and fe assigned to a variable *** ;;
 
 (function_declaration
@@ -120,4 +121,12 @@ return function(opts)
   )
 )
 ]]
+	if not is_js then
+		query = query .. [[
+;;*** enums *** ;;
+
+(enum_declaration name: (identifier) @enum.name) @enum.definition
+]]
+	end
+	return query
 end
