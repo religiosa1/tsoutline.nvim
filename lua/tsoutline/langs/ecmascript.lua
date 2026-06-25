@@ -116,16 +116,59 @@ return function(opts)
     declaration: (lexical_declaration
       kind: "const"
       (variable_declarator
-        name: (identifier) @const.name)
-    ) @const.definition
-  )
+        name: (identifier) @const.name))
+  ) @const.definition @exported
 )
+
+;;*** exported declarations ***;;
+;; These overlap their plain twins above: they share the same name identifier
+;; (the dedup key), but the @<type>.definition here is the whole export_statement
+;; so the highlighted range covers the `export` keyword too. The @exported marker
+;; rides along and the higher conflict priority makes these win the dedup.
+
+(export_statement
+  declaration: (function_declaration
+    name: (identifier) @function.name)
+) @function.definition @exported
+
+(export_statement
+  declaration: (lexical_declaration
+    kind: "const"
+    (variable_declarator
+      name: (identifier) @arrow.name
+      value: [(arrow_function) (function_expression)]))
+) @arrow.definition @exported
+
+(export_statement
+  declaration: ((lexical_declaration
+    kind: _ @kind
+    (variable_declarator
+      name: (identifier) @var_arrow.name
+      value: [(arrow_function) (function_expression)]))
+    (#not-eq? @kind "const"))
+) @var_arrow.definition @exported
+
+(export_statement
+  declaration: (variable_declaration
+    (variable_declarator
+      name: (identifier) @var_arrow.name
+      value: [(arrow_function) (function_expression)]))
+) @var_arrow.definition @exported
+
+(export_statement
+  declaration: (class_declaration
+    name: ]] .. class_name_node .. [[ @class.name)
+) @class.definition @exported
 ]]
 	if not is_js then
 		query = query .. [[
 ;;*** enums *** ;;
 
 (enum_declaration name: (identifier) @enum.name) @enum.definition
+
+(export_statement
+  declaration: (enum_declaration name: (identifier) @enum.name)
+) @enum.definition @exported
 ]]
 	end
 	return query

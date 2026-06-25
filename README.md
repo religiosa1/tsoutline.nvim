@@ -94,6 +94,12 @@ Your query must capture `<type>.name` and `<type>.definition`, containing the
 name and full definition of a thing you're trying to capture, where `<type>`
 is one of `SymbolType` enum values (e.g. `function`, `class`, etc).
 
+You can optionally add an `@exported` marker capture to a pattern to mark the
+symbol as exported (it gets an `export ` prefix in the picker). It is orthogonal
+to `<type>` -- the same `<type>.name`/`<type>.definition` captures are reused;
+the marked pattern overlaps its plain twin and wins via a higher conflict
+priority. See the "exported declarations" section in ecmascript.lua.
+
 Once you have your query written you can verify it, by using `:EditQuery` in
 a source file and pasting your query there -- it should find the thing you're
 trying to get in tree-sitter.

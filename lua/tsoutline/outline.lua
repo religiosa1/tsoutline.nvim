@@ -30,8 +30,12 @@ end
 ---@param conflict_priority number if an item with pos exists, but has lower priority -- append it anyway
 ---@return boolean true if pos was added to the set, false if it's already present
 function OutlineNodesSet:add(node, conflict_priority)
-	local line = node.pos[1]
-	local col = node.pos[2]
+	-- Dedup on the name-node position, not the definition start: a declaration
+	-- and its exported twin share the same name identifier but have different
+	-- definition ranges (the exported one includes the `export` keyword).
+	local key = node.key_pos or node.pos
+	local line = key[1]
+	local col = key[2]
 	if not self.lines[line] then
 		self.lines[line] = {}
 	end
@@ -75,6 +79,8 @@ local SymbolType = {
 ---@field kind string?
 ---@field pos snacks.picker.Pos -- 1-indexed: [line, col]
 ---@field end_pos snacks.picker.Pos -- 1-indexed: [end_line, end_col]
+---@field exported boolean? whether the symbol is exported
+---@field key_pos snacks.picker.Pos? name-node position used as the dedup key (defaults to pos)
 
 ---Get the icon kind (for the icon) from the node
 ---Full list of possible kinds can be found here:
@@ -107,26 +113,36 @@ end
 
 ---Get capture_type conflict priority
 ---@param symbol_type SymbolType
+---@param exported boolean? whether the symbol is exported
 ---@return number
-local function get_node_priority(symbol_type)
+local function get_node_priority(symbol_type, exported)
+	local priority
 	if symbol_type == SymbolType.Const then
 		--- constants have lower priority to be overridden by FE assignment.
 		--- export consts are still captured as a separate entity, because of the extended range
-		return 500
+		priority = 500
 	elseif symbol_type == SymbolType.Getter or symbol_type == SymbolType.Setter then
 		-- getters or setters are higher priority than methods
-		return 1200
+		priority = 1200
 	else
-		return 1000
+		priority = 1000
 	end
+	-- An exported declaration matches both the plain pattern and the @exported
+	-- one (same definition node), so the exported variant must win the dedup to
+	-- preserve the `exported` flag.
+	if exported then
+		priority = priority + 1
+	end
+	return priority
 end
 
 ---Get the node name, that will be displayed in the picker
 ---@param symbol_type SymbolType
 ---@param captured_nodes table<string, TSNode[]>
 ---@param buffer_id integer
+---@param exported boolean? whether the symbol is exported
 ---@return string name to be displayed in the snacks picker
-local function get_node_name(symbol_type, captured_nodes, buffer_id)
+local function get_node_name(symbol_type, captured_nodes, buffer_id, exported)
 	local name_nodes = captured_nodes[symbol_type .. ".name"]
 	assert(name_nodes, "Name nodes treesitter capture returned nil")
 	assert(name_nodes[1], "No name nodes returned in the capture")
@@ -161,6 +177,9 @@ local function get_node_name(symbol_type, captured_nodes, buffer_id)
 
 		name = name .. string.format("(%s) callback", args)
 	end
+	if exported then
+		name = "export " .. name
+	end
 	return name
 end
 
@@ -191,6 +210,14 @@ local function get_symbol_type(captured_nodes)
 		end
 	end
 	return symbol_type
+end
+
+---Whether the matched symbol is exported, signalled by the orthogonal
+---`@exported` marker capture being present in the match.
+---@param captured_nodes table<string, TSNode[]>
+---@return boolean
+local function is_exported(captured_nodes)
+	return captured_nodes["exported"] ~= nil
 end
 
 ---get all "interesting" for outline nodes
@@ -225,13 +252,19 @@ local function get_outline_nodes(treesitter_language, query_string, parser, buff
 		local pos = { start_row + 1, start_col }
 		local end_pos = { end_row + 1, end_col }
 
+		local name_start_row, name_start_col = name_nodes[1]:range()
+		local key_pos = { name_start_row + 1, name_start_col }
+
+		local exported = is_exported(captured_nodes)
 		local node = {
-			name = get_node_name(symbol_type, captured_nodes, buffer_id),
+			name = get_node_name(symbol_type, captured_nodes, buffer_id, exported),
 			kind = get_node_kind_icon(symbol_type),
 			pos = pos,
 			end_pos = end_pos,
+			key_pos = key_pos,
+			exported = exported,
 		}
-		local conflict_priority = get_node_priority(symbol_type)
+		local conflict_priority = get_node_priority(symbol_type, exported)
 		outline_nodes:add(node, conflict_priority)
 		::next_match::
 	end
@@ -281,6 +314,7 @@ local function build_tree(outline_nodes, file_path)
 				text = current.name,
 				name = current.name,
 				kind = current.kind,
+				exported = current.exported,
 				file = file_path,
 				pos = current.pos,
 				end_pos = current.end_pos,
